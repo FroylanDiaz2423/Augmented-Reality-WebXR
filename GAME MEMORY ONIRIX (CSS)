@@ -1,0 +1,275 @@
+@import url('https://fonts.cdnfonts.com/css/quicksand');
+@import url('https://fonts.googleapis.com/css?family=Gluten');
+
+#injection-root {
+    position: initial !important;
+    height: 100%;
+}
+
+#overlay {
+  background-color: #3454a0 !important;
+}
+
+#ox-marker-detection-bubble {
+  background-color: #0d58ad;
+}
+
+#ox-progress-bar {
+  background-color: #0e4aa5 !important;
+}
+
+
+#webar-topbar {
+    display: none !important;
+}
+
+.ox-hidden {
+    display: none !important;
+}
+
+.ox-footer-img {
+    position: absolute;
+    z-index: 2;
+    bottom: calc( (var(--sab) * -1) + (var(--sat) * -1));
+    left: 50%;
+    transform: translate(-50%, 0%);
+    max-height: 80px;
+}
+
+.ox-landing {
+    position: absolute;
+    height: calc(100% - 252px + var(--sab) + var(--sat));
+    width: calc(100% - 140px);
+    padding: 126px 70px;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.ox-landing h1 {
+    margin: 34px 0 48px 0;
+    font-size: 30px;
+    color: #ffffff;
+    font-family: 'Quicksand Light', sans-serif;
+    text-align: center;
+}
+
+.ox-rules,
+.ox-scoring,
+.ox-game-end {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.ox-game-end{
+    margin-top: 20px;
+}
+
+.ox-rules > div,
+.ox-scoring > div,
+.ox-game-end > div {
+    background-color: #0b4d99;
+    border: solid #fff 14px;
+    border-radius: 50px;
+    padding: 36px;
+    width: calc(336px - 100px);
+    margin-bottom: 14px;
+    margin-top: 21px;
+    font-family: 'Quicksand Light', sans-serif;
+    color: #ffffff;
+    font-weight: 800;
+    margin-top: -60px;
+}
+
+.ox-rules h1 {
+    margin: 0 0 30px 0;
+    font-family: 'Gluten';
+    font-size: 30px;
+    color: #ffffff;
+}
+
+.ox-rules p {
+    font-size: 22px;
+    margin: 0;
+}
+
+.ox-rules div p:first-of-type {
+    margin-bottom: 16px;
+}
+
+.ox-scoring div {
+    padding: 30px 24px 30px 24px;
+    width: calc(336px - 64px);
+}
+
+.ox-scoring p {
+    margin: 0;
+    margin-bottom: 20px;
+    font-size: 22px;
+}
+
+.ox-scoring ul {
+    font-size: 22px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.ox-scoring ul li {
+    text-indent: -5px;
+    margin-bottom: 10px;
+}
+
+.ox-scoring ul li:before {
+    content: "-";
+    text-indent: -5px;
+}
+
+.ox-scoring ul li:last-child{
+    margin-bottom: 0;
+}
+
+.button{
+    max-width: 160px;
+}
+
+.ox-game-ui {
+    position: absolute;
+    top: 0;
+    width: calc(100% - 28px);
+    height: calc(80px - 42px);
+    padding: 21px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #FFFFFFBF;
+    padding-top: calc(21px + var(--sat));
+}
+
+.ox-game-ui > img {
+    width: 83px;
+}
+
+.ox-game-ui .ox-timer {
+    width: 107px;
+    height: 38px;
+    font-size: 14px;
+    font-family: 'Gluten';
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: url('https://jungle.onirix.com/assets/leaf.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.ox-game-ui .ox-timer .ox-timer__time {
+    margin-right: 5px;
+    margin-left: 25px;
+}
+
+.ox-matches {
+    position: absolute;
+    left: 13px;
+    top: calc(75% + var(--sat));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 87px;
+    height: 48px;
+    background-image: url('https://jungle.onirix.com/assets/leaf-points.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    color: #072194;
+    font-family: 'Gluten';
+    font-size: 26px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.ox-game-end > div {
+    background-color: #fffffffa;
+    font-family: 'Gluten';
+    color: #0c58af;
+    text-align: center;
+
+    border-width: 7px;
+    padding: 10px 36px;
+}
+
+.ox-game-end div h1 {
+    font-size: 30px;
+    font-weight: 600;
+    margin: 16px 0 20px 0;
+}
+
+.ox-game-end .ox-score {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    column-gap: 46px;
+    row-gap: 10px;
+    margin-bottom: 17px;
+}
+
+.ox-game-end .ox-score .ox-matches--sc,
+.ox-game-end .ox-score .ox-timer__time--sc {
+    color: #0c38b0;
+    font-weight: bold;
+    font-size: 14.6px;
+    position: inherit;
+    width: 71px;
+    height: 39px;
+    background-image: url('https://jungle.onirix.com/assets/leaf-points.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ox-game-end .ox-score .ox-score__matches,
+.ox-game-end .ox-score .ox-score__timer {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.ox-game-end div p {
+    font-size: 18px;
+    color: #0f2898;
+    margin: 10px 0;
+}
+
+.ox-visit-onirix {
+    margin: 40px;
+    cursor: pointer;
+}
+
+.ox-visit-onirix span {
+    padding: 20px;
+    background: #264bc3;
+    border: 5px solid white;
+    border-radius: 30px;
+}
+
+.ox-game-end {
+    content: "Would you like to create AR experiences like this?";
+}
+
+.ox-game-logo{
+    width: 130px;
+    position: relative;
+    margin-top: -50px;
+}
+
+.ox-playagain{
+    word-wrap: 180px;
+}
