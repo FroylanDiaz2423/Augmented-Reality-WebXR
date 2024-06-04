@@ -1,0 +1,61 @@
+<section class="ox-landing ox-hidden">
+    <img src="https://www.grupoabsa.com/web/image/9574485/MEMORAMA-ABSA.png" alt="game-logo" />
+    <h1>Memory Game</h1>
+    <img class="button" src="https://www.grupoabsa.com/web/image/9574493/START.png"
+        alt="Start button" />
+</section>
+
+<section class="ox-rules ox-hidden">
+    <div>
+        <h1>How to play</h1>
+        <p>Flip the card to find the matches.</p>
+        <p>You have one minute and <b>6 couples</b> of animals to detect!</p>
+    </div>
+    <img class="button" src="https://www.grupoabsa.com/web/image/9574487/NEXT.png"
+        alt="Next button" />
+</section>
+
+<section class="ox-scoring ox-hidden">
+    <div>
+        <p>For each match you will get <b>100 points.</b></p>
+        <p>If you find all the matches between:</p>
+        <ul>
+            <li><b>50-60</b> seconds you get additional <b>50 points</b></li>
+            <li><b>40-50</b> seconds you will get additional <b>75 points</b></li>
+            <li><b>0-40</b> seconds you will get additional <b>100 points</b></li>
+        </ul>
+    </div>
+    <img class="button" src="https://www.grupoabsa.com/web/image/9574491/PLAY.png"
+        alt="Play button" />
+</section>
+
+<section class="ox-game-ui ox-hidden">
+    <img src="https://www.grupoabsa.com/web/image/9574485/MEMORAMA-ABSA.png" alt="game-logo" />
+    <span class="ox-timer">
+        <span class="ox-timer__time">60</span> sec
+    </span>
+</section>
+<span class="ox-matches ox-hidden"></span>
+
+<section class="ox-game-end ox-hidden">
+    <div>
+        <img class="ox-game-logo" src="https://www.grupoabsa.com/web/image/9574485/MEMORAMA-ABSA.png" />
+        <h1>Your score:</h1>
+        <div class="ox-score">
+            <span class="ox-matches--sc">0/6</span>
+            <span class="ox-timer__time--sc">60 sec</span>
+            <span class="ox-score__matches">+ 000 points</span>
+            <span class="ox-score__timer">+ 50 points</span>
+        </div>
+        <img class="ox-playagain" 
+            src="https://www.grupoabsa.com/web/image/9574489/PLAY%20AGAIN.png"
+            alt="Play again button" />
+        <p>Would you like to create AR experiences like this?</p>
+        <div class="ox-visit-onirix">
+            <span>Visit Onirix</span>
+        </div>
+    </div>
+</section>
+
+<img class="ox-footer-img ox-hidden" 
+    src="https://www.grupoabsa.com/web/image/9574483/FOOTER.png" alt="footer-img"/>
