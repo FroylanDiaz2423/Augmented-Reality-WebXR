@@ -1,0 +1,514 @@
+/**
+ * Class to play and pause sounds
+ */
+class OxSoundManager {
+
+    /**
+     * Name of the audio elements
+     */
+    SD_CHOCO = "Ambient_ABSA";
+    SD_FAIL = "Fail";
+    SD_MATCH = "Match";
+    SD_FLIP = "Whoosh";
+
+    /**
+     * Constructor, initialize the embedsdk
+     * 
+     * @param   embedsdk
+     */
+    constructor(embedSdk) {
+        this.embedSDK = embedSdk;
+    }
+
+    /**
+     * Play choco sound
+     */
+    playChoco() {
+        this.playSound(this.SD_CHOCO);
+    }
+
+    /**
+     * Stop choco sound
+     */
+    stopChoco() {
+        this.embedSDK.pause(this.SD_CHOCO);
+    }
+
+    /**
+     * Play fail sound
+     */
+    playFail() {
+        this.playSound(this.SD_FAIL);
+    }
+
+    /**
+     * Play match sound
+     */
+    playMatch() {
+        this.playSound(this.SD_MATCH);
+    }
+
+    /**
+     * Play flip sound
+     */
+    playFlip() {
+        this.playSound(this.SD_FLIP);
+    }
+
+    /**
+     * Execute sound
+     * 
+     * @internal
+     * @param   sound name
+     */
+    playSound(sound) {
+        this.embedSDK.play(sound);
+    }
+}
+
+
+/**
+ * This class is in charge of handling the interaction with the AR experience through the EmbedSDK.
+ */
+class OxExperience {
+
+    /**
+     * Contains a list of the cards already matched
+     */
+    matchedCards = [];
+
+    /**
+     * Count of matches
+     */
+    matches = 0;
+
+    /**
+     * Flip back timeout
+     */
+    flipTimeout = null;
+
+    /**
+     * Name of AR cards
+     */
+    cards = ["Card 1", "Card 2", "Card 3", "Card 4", "Card 5", "Card 6", "Card 7", "Card 8", "Card 9", "Card 10", "Card 11", "Card 12"];
+    
+    /**
+     * Name of all variants
+     */
+    variants = ["ABSA", "ARUBA", "K+", "MOTOROLA", "PANDUIT", "STULZ"];
+
+    /**
+     * Relation of card and variant
+     */
+    cardsVariants = [];
+
+    /**
+     * First card selected
+     */
+    currentCardSelected;
+
+    /**
+     * Cards animation lists
+     */
+    cardAnimations = [
+        {
+            name: "BounceA",
+            duration: 0.9583333134651184
+        },
+        {
+            name: "BounceB",
+            duration: 0.9583333134651184
+        }
+    ]
+
+    /**
+     * Constructor, initialize embedsdk
+     * 
+     * @param   embedsdk
+     */
+    constructor(embedSdk) {
+        this.embedSDK = embedSdk;
+    }
+
+    /**
+     * Initialize and reset the game. Assing variants to a cards
+     */
+    resetGame() {
+        if (this.matchedCards.length != 0) {
+            const cards = this.matchedCards.flat();
+            cards.forEach(card => this.rotateElement(card.card, 180));
+        }
+        this.cardsVariants = [];
+        this.currentCardSelected = null;
+        this.flipTimeout = null;
+        this.matchedCards = [];
+        this.matches = 0;
+        for (const card of this.cards) {
+            let variantIndex;
+            do {
+                variantIndex = Math.floor(Math.random() * this.variants.length);
+            } while (this.cardsVariants.filter(cardV => cardV.variant == this.variants[variantIndex]).length == 2);
+            this.cardsVariants.push({
+                card: card,
+                variant: this.variants[variantIndex]
+            });
+            this.embedSDK.setVariant(card, this.variants[variantIndex]);
+        }
+    }
+
+    /**
+     * Manage actions when click a card
+     * 
+     * @param   info about the selected card
+     */
+    flipCard(params) {
+        const card = this.cards.find(card => card == params.name);
+        if (!card || this.matchedCards.find(matched => matched.card == card) != null || this.flipTimeout || card == this.currentCardSelected?.card) {
+            return;
+        }
+
+        this.uncoverCard(card);
+        if (this.currentCardSelected == null) {
+            this.currentCardSelected = this.cardsVariants.find(cardV => cardV.card == card);
+        } else {
+            const newSelected = this.cardsVariants.find(cardV => cardV.card == card); 
+            return this.checkMatch(newSelected);
+        }
+    }
+
+    /**
+     * Play animation to show th card
+     * 
+     * @internal
+     * @param   card selected
+     */
+    uncoverCard(card) {
+        this.rotateElement(card);
+        this.embedSDK.playAnimation(card, this.cardAnimations[0].name, false, false);
+        this.onPlayFlip();
+        setTimeout(() => {
+            this.embedSDK.stopAnimation(card);
+        }, this.cardAnimations[0].duration * 1000);
+    }
+
+    /**
+     * Check if first card and selected card has the same variant
+     * 
+     * @internal
+     * @param   selected card
+     */
+    checkMatch(card) {
+        let matched = false;
+        if (card.variant == this.currentCardSelected.variant) {
+            this.onPlayMatch();
+            const currentPair = [
+                this.currentCardSelected, card
+            ];
+            this.matchedCards.push(...currentPair);
+            this.matches += 1;
+            this.currentCardSelected = null;
+            matched = true;
+        } else {
+            this.flipTimeout = setTimeout(() => {
+                this.onPlayFail();
+                this.embedSDK.playAnimation(card.card, this.cardAnimations[1].name, false, false);
+                this.embedSDK.playAnimation(this.currentCardSelected.card, this.cardAnimations[1].name, false, false);
+                setTimeout(() => {
+                    this.embedSDK.stopAnimation(card.card);
+                    this.embedSDK.stopAnimation(this.currentCardSelected.card);
+                    this.rotateElement(card.card, 180);
+                    this.rotateElement(this.currentCardSelected.card, 180);
+                    this.flipTimeout = null;
+                    this.currentCardSelected = null;
+                }, this.cardAnimations[1].duration * 1000);
+            }, 1000)
+        }
+        return matched;
+    }
+
+    /**
+     * Rotate a given element
+     * 
+     * @internal
+     * @param   element name
+     * @param   rotation
+     */
+    rotateElement(element, rotation = -180) {
+        this.embedSDK.rotate(element, 0, 0, rotation, 0);
+    }
+
+    /**
+     * Check if the game is finished
+     */
+    isGameCompleted() {
+        return this.matchedCards.length === this.cards.length;
+    }
+}
+
+/**
+ * This class is in charge of handling the interaction with the custom html and css code.
+ */
+class OxExperienceUI {
+
+    /**
+     * HTML elements classes
+     */
+    LANDING = ".ox-landing";
+    RULES = ".ox-rules";
+    SCORING = ".ox-scoring";
+    GAMEUI = ".ox-game-ui";
+    GAMEEND = ".ox-game-end";
+    MATCHES = ".ox-matches";
+    MATCHES_SCORE = ".ox-matches--sc";
+    TIMER = ".ox-timer__time";
+    TIMER_SCORE = ".ox-timer__time--sc";
+    M_SCORE = ".ox-score__matches";
+    T_SCORE = ".ox-score__timer";
+    PLAY_AGAIN = ".ox-playagain";
+    VISIT_ONIRIX = ".ox-visit-onirix";
+
+    /**
+     * HTML Classes
+     */
+    OX_HIDDEN = "ox-hidden";
+    FOOTER_IMG = ".ox-footer-img";
+    BUTTON = ".button"
+
+
+    /**
+     * Constants
+     */
+    MAX_MATCHES = 6;
+    MATCH_POINTS = 100;
+    T1_POINTS = 100;
+    T2_POINTS = 75;
+    T3_POINTS = 50;
+    GAME_TIME = 60;
+
+    /**
+     * Variables
+     */
+    finalMatches = 0;
+    currentTime = 0;
+    finalScore = 0;
+    timerInterval = null;
+    sceneLoadEnd = false;
+    isPlayClicked = false;
+
+    updateSceneLoadEnd() {
+        this.sceneLoadEnd = true;
+    }
+
+    getPlayClicked() {
+        return this.isPlayClicked;
+    }
+
+    /**
+     * Show landing screen
+     */
+    load() {
+        document.querySelector(this.LANDING).classList.remove(this.OX_HIDDEN);
+        document.querySelector(this.FOOTER_IMG).classList.remove(this.OX_HIDDEN);
+        document.querySelector(`${this.LANDING} ${this.BUTTON}`).onclick = () => this.start();
+    }
+
+    /**
+     * Show rules screen
+     * 
+     * @internal
+     */
+    start() {
+        document.querySelector(this.LANDING).classList.add(this.OX_HIDDEN);
+        document.querySelector(this.RULES).classList.remove(this.OX_HIDDEN);
+        document.querySelector(`${this.RULES} ${this.BUTTON}`).onclick = () => this.scoring();
+    }
+
+    /**
+     * Show scoring explanation screen
+     * 
+     * @internal
+     */
+    scoring() {
+        document.querySelector(this.RULES).classList.add(this.OX_HIDDEN);
+        document.querySelector(this.SCORING).classList.remove(this.OX_HIDDEN);
+        document.querySelector(`${this.SCORING} ${this.BUTTON}`).onclick = () => this.startGame();
+    }
+
+    /**
+     * Initialize the game and UI
+     * 
+     * @internal
+     */
+    startGame() {
+        this.isPlayClicked = true;
+        this.finalMatches = 0;
+        this.finalTimer = 0;
+        this.finalScore = 0;
+        this.finalMatches = 0;
+        this.currentTime = 0;
+
+        document.querySelector(this.SCORING).classList.add(this.OX_HIDDEN);
+        if (this.sceneLoadEnd) {
+            document.querySelector(this.GAMEUI).classList.remove(this.OX_HIDDEN);
+            document.querySelector(this.MATCHES).classList.remove(this.OX_HIDDEN);
+            document.querySelector(this.MATCHES).innerHTML = `0/${this.MAX_MATCHES}`;
+            this.startTimer();
+            this.onStartGame();
+        }
+    }
+
+    /**
+     * Manage the top timer
+     * 
+     * @internal
+     */
+    startTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
+
+        document.querySelector(this.TIMER).innerHTML = this.GAME_TIME;
+
+        this.timerInterval = setInterval(() => {
+            this.currentTime += 1;
+            if (this.currentTime >= this.GAME_TIME) {
+                this.calculateFinalScore();
+            }
+            document.querySelector(this.TIMER).innerHTML = this.GAME_TIME - this.currentTime;
+        }, 1000);
+    }
+
+    /**
+     * Stops the timer
+     * 
+     * @internal
+     */
+    stopTimer() {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+    }
+
+    /**
+     * Show end screen
+     * 
+     * @internal
+     * @param   points achived
+     * @param   time taken to complete the game
+     */
+    gameEnd(matchScore, timerScore) {
+        this.onStopChoco();
+        document.querySelector(this.MATCHES).classList.add(this.OX_HIDDEN);
+        document.querySelector(this.GAMEUI).classList.add(this.OX_HIDDEN);
+
+        document.querySelector(this.MATCHES_SCORE).innerHTML = `${this.finalMatches}/${this.MAX_MATCHES}`;
+        document.querySelector(this.TIMER_SCORE).innerHTML = `${this.currentTime} sec`;
+        document.querySelector(this.M_SCORE).innerHTML = `+ ${matchScore} points`;
+        document.querySelector(this.T_SCORE).innerHTML = `+ ${timerScore} points`;
+
+        document.querySelector(this.GAMEEND).classList.remove(this.OX_HIDDEN);
+        document.querySelector(this.PLAY_AGAIN).onclick = () => this.resetGame();
+        document.querySelector(this.VISIT_ONIRIX).onclick = () => this.visitOnirix();
+    }
+
+    /**
+     * Update the score UI section
+     */
+    updateScore(matches) {
+        this.finalMatches = matches;
+        if (matches >= this.MAX_MATCHES) {
+            this.calculateFinalScore(matches);
+        } else {
+            document.querySelector(this.MATCHES).innerHTML = `${matches}/${this.MAX_MATCHES}`;
+        }
+    }
+
+    /**
+     * Calculate the points achived
+     * 
+     * @param   discovered couples
+     */
+    calculateFinalScore(matches) {
+        this.stopTimer();
+
+        this.finalMatches = matches != null ?
+            matches : this.finalMatches;
+
+        const matchScore = this.finalMatches * this.MATCH_POINTS;
+        const timerScore = this.currentTime > 49 ? this.T3_POINTS :
+            this.currentTime > 39 ? this.T2_POINTS : this.T1_POINTS;
+        this.finalScore = matchScore + timerScore;
+
+        this.gameEnd(matchScore, timerScore);
+    }
+
+    /**
+     * Reinit the game
+     * 
+     * @internal
+     */
+    resetGame() {
+        document.querySelector(this.GAMEEND).classList.add(this.OX_HIDDEN);
+        this.startGame();
+        this.onPlayChoco();
+    }
+}
+
+
+/**
+ * Onirix Embed SDK allows you to listen to events and control the scene when embedding experiences in a custom domain or from the online code editor.
+ * For more information visit https://docs.onirix.com/onirix-sdk/embed-sdk
+ */
+import OnirixEmbedSDK from "https://unpkg.com/@onirix/embed-sdk@1.8.1/dist/ox-embed-sdk.esm.js";
+const embedSDK = new OnirixEmbedSDK();
+await embedSDK.connect();
+
+const soundManager = new OxSoundManager(embedSDK);
+const oxExperience = new OxExperience(embedSDK);
+const oxExperienceUi = new OxExperienceUI();
+
+oxExperience.onPlayMatch = () => {
+    soundManager.playMatch();
+}
+
+oxExperience.onPlayFail = () => {
+    soundManager.playFail();
+}
+
+oxExperience.onPlayFlip = () => {
+    soundManager.playFlip();
+}
+
+oxExperienceUi.onStopChoco = () => {
+    soundManager.stopChoco();
+}
+
+oxExperienceUi.onStartGame = () => {
+    oxExperience.resetGame();
+}
+
+oxExperienceUi.onPlayChoco = () => {
+    soundManager.playChoco();
+}
+
+embedSDK.subscribe(OnirixEmbedSDK.Events.SCENE_LOAD_START, params => {
+    oxExperienceUi.load();
+});
+
+embedSDK.subscribe(OnirixEmbedSDK.Events.SCENE_LOAD_END, params => {
+    soundManager.playChoco();
+    oxExperienceUi.updateSceneLoadEnd();
+    if (oxExperienceUi.getPlayClicked()) {
+        oxExperienceUi.startGame();
+    }
+    
+});
+
+embedSDK.subscribe(OnirixEmbedSDK.Events.ELEMENT_CLICK, params => {
+    if (oxExperience.flipCard(params)) {
+        if (oxExperience.isGameCompleted()) {
+            oxExperienceUi.calculateFinalScore(oxExperience.matches);
+        } else {
+            oxExperienceUi.updateScore(oxExperience.matches);
+        }
+    }
+});	
