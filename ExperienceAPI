@@ -1,443 +1,60 @@
+// This class is in charge of handling the interaction with the AR experience through the EmbedSDK.
 
-/**
- * This class is in charge of handling the interaction with the custom html and css code.
- */
-class OxExperienceUI {
-    /**
-     * Html elements ids
-     */
-    HOME = "ox-weather-home";
-    HOME_DROPDOWN = "ox-weather-home--panel__dropdown";
-    SEARCH = "ox-weather-search";
-    INPUT = "input-search";
-    CURRENT_LOCATION = "ox-weather-search--content__current-location";
-    CLOSE = "ox-weather-search--header__close";
-    TOP = "ox-weather-top";
-    TOP_DROPDOWN = "ox-weather-top--dropdown";
-    LOCATIONS = "ox-weather-search--content__locations";
-    SEARCH_CONTENT = "ox-weather-search--content";
-    LOCATION = "ox-weather-search--content__location";
-    NAME = "ox-weather-top--dropdown__name";
-    LOADING_SEARCH = "ox-weather-loading-search";
-    LOADING = "ox-weather-loading";
-
-    /**
-     * Text to search on the cities API
-     */
-    searchText = '';
-
-    /**
-     * Latitude of the selected city
-     */
-    latitud = 0;
-
-    /**
-     * Longitude of the selected city
-     */
-    longitud = 0;
-
-    /**
-     * Async search
-     */
-    interval = null;
-
-    /**
-     * Initialize the UI and the events
-     */
-    init() {
-        document.getElementById(this.HOME).style.display = "flex";
-        document.getElementById(this.HOME_DROPDOWN).addEventListener("click", () => {
-            this.setLocations();
-            document.getElementById(this.HOME).style.display = "none";
-            document.getElementById(this.SEARCH).style.display = "flex";
-
-            document.getElementById(this.INPUT).addEventListener("keyup", () => {
-                clearInterval(this.interval);
-                document.getElementById(this.LOADING_SEARCH).style.display = "flex";
-                const list = document.getElementById(this.LOCATIONS);
-                if (list != null) {
-                    document.getElementById(this.SEARCH_CONTENT).removeChild(list);
-                }
-                this.interval = setInterval( () => {
-                    this.searchText = document.getElementById(this.INPUT).value;
-                    this.setLocations();
-                    clearInterval(this.interval);
-                }, 1000);
-            }, false);
-
-            document.getElementById(this.CURRENT_LOCATION).addEventListener("click", () => {
-                document.getElementById(this.LOADING).style.display = "flex";
-                navigator.geolocation.getCurrentPosition(this.getPosition.bind(this));  
-            });
-
-            document.getElementById(this.CLOSE).addEventListener("click", () => {
-                document.getElementById(this.HOME).style.display = "flex";
-                document.getElementById(this.SEARCH).style.display = "none";
-                this.searchText = '';
-            });
-        });
-    }
-    
-    /**
-     * Get the latitude and longitude of the city
-     * 
-     * @internal
-     * @params  position of the city
-     */
-    async getPosition(position) {
-        const searchParams = new URLSearchParams(window.location.search);
-        if (searchParams.get("lat") != null && searchParams.get("long") != null) {
-            this.latitud = searchParams.get("lat");
-            this.longitud = searchParams.get("long");
-        } else {
-            this.latitud = position.coords.latitude;
-            this.longitud = position.coords.longitude;
-        }
-        this.getWeather();
-    }
-
-    /**
-     * Call to weather API
-     * 
-     * @internal
-     */
-    async getWeather() {
-        const apiUrl = 'https://api.openweathermap.org/data/2.5/weather?lat=' +
-        this.latitud + '&lon=' +
-        this.longitud + '&units=metric&appid=b7a0ad18a6635aa761fb54d60b292bb2';
-        const response = await fetch(apiUrl);
-        let data = await response.json();
-        this.onShowAR(data);
-        this.setNameCity(data.name);
-        document.getElementById(this.LOADING).style.display = "none";
-        document.getElementById(this.SEARCH).style.display = "none";
-        document.getElementById(this.TOP).style.display = "flex";
-        document.getElementById(this.TOP_DROPDOWN).addEventListener("click", () => {
-            document.getElementById(this.TOP).style.display = "none";
-            document.getElementById(this.SEARCH).style.display = "flex";
-            this.onDisableAll();
-        })
-    }
-
-    /**
-     * Call to cities API and set in DOM
-     * 
-     * @internal
-     */
-    setLocations() {
-        let ul = document.createElement("div");
-        ul.id = this.LOCATIONS
-        const url = 'https://wft-geo-db.p.rapidapi.com/v1/geo/cities?limit=10&minPopulation=10000&namePrefix=' + this.searchText;
-        const options = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-rapidapi-host': 'wft-geo-db.p.rapidapi.com',
-                'x-rapidapi-key': '683f9d86d1mshe7742de69a7b862p1fbf1ejsn4aa2ba1406a4' // replace with your RapidAPI key
-            }
-        };
-        const request = new Request(url, options);
-        fetch(request)
-        .then(response => {
-            return response.json();
-        })
-        .then(data => {
-            let hash = {};
-            const array = data.data.filter(o => hash[o.name] ? false : hash[o.name] = true);
-
-            array.forEach(ele => {
-                let li = document.createElement("span");
-                let liTexto = document.createTextNode(ele.name);
-                li.appendChild(liTexto);
-                li.addEventListener("click", () => {
-                    document.getElementById(this.LOADING).style.display = "flex";
-                    const position = {
-                        coords: {
-                            latitude: ele.latitude,
-                            longitude: ele.longitude
-                        },
-                        name: ele.name
-                    }
-                    this.getPosition(position);
-                })
-                li.id = this.LOCATION;
-                ul.appendChild(li);
-            })
-        
-            document.getElementById(this.LOADING_SEARCH).style.display = "none";
-            document.getElementById(this.SEARCH_CONTENT).appendChild(ul);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    }
-
-    /**
-     * Set the name of the city in the AR screen dropdown
-     */
-    setNameCity(name) {
-        document.getElementById(this.NAME).innerText = name;
-    }
-
-    /**
-     * Hide all HTML
-     */
-    hideHTML() {
-        document.getElementById(this.HOME).style.display = "none";
-        document.getElementById(this.SEARCH).style.display = "none";
-        document.getElementById(this.TOP).style.display = "none";
-        document.getElementById(this.LOADING).style.display = "none";
-    }
-
-
-}
-
-/**
- * This class is in charge of handling the interaction with the AR experience through the EmbedSDK.
- */
 class OxExperience {
+    /**
+     * Names of the elements in the AR experience.
+     */
+    LABEL_BOTTLES = "TAG3-Valor";
+    MAIN_TEXT = "TAG2-Valor";
+    MAIN_TEXT_2 = "TAG1-Valor";
 
     /**
-     * Name of the AR elements
+     * Number of elements to show
      */
-    COLD = "cold";
-    WS_SUNNY = "ws-sunny";
-    SF_RAIN = "sf-rain";
-    WS_CLOUDY = "ws-cloudy";
-    WS_RAIN = "ws-rain";
-    SF_SUNNY = "sf-sunny";
-    SF_CLOUDY = "sf-cloudy";
-    TEMPERATURE_TEXT = "text-temperature";
-    HUMIDITY_TEXT = "text-humidity";
-    WIND_TEXT = "text-wind";
-    MAIN_TEXT = "text-main";
-    CARDS = "Cards";
-    STORM = "storm";
-    SUN_CLOUDS = "sun_clouds";
-    SUN = "sun";
-    CLOUDS = "clouds";
-    SNOW = "snow";
-    RAIN_TOP = "rain";
-
-
-    /**
-     * Animaions
-     */
-
-    cold_animation = {
-        name: "snow",
-        duration: 10
-    }
-
-    ws_sunny_animation = {
-        name: "Animation",
-        duration: 8
-    }
-
-    sf_rain_animation = {
-        name: "Animation",
-        duration: 13.466666221618652
-    }
-
-    ws_cloudy_animation = {
-        name: "Animation",
-        duration: 4
-    }
-
-    ws_rain_animation = {
-        name: "Rain_Animation",
-        duration: 8.333333015441895
-    }
-
-    sf_sunny_animation = {
-        name: "hot",
-        duration: 10
-    }
-
-    sf_cloudy_animation = {
-        name: "Animation",
-        duration: 4
-    }
-
-    /**
-     * API hot states
-     */
-    hot_states= ['Clear'];
-
-    /**
-     * API rain states
-     */
-    rain_states = ['Thunderstorm', 'Drizzle', 'Rain', 'Squall', 'Tornado'];
-    
-    /**
-     * API cold states
-     */
-    cold_states = ['Snow'];
-
-    /**
-     * API cloud states
-     */
-    cloud_states = ['Mist', 'Smoke', 'Haze', 'Fog', 'Ash', 'Clouds']
-
-    /**
-     * API rain
-     */
-    rain = ['Drizzle', 'Rain'];
+    numberOfBottles = 0;
+    maintextone = 0;
+    maintexttwo = 0;
 
     /**
      * Constructor
-     * Initialize the embedSDK and te points of the table
+     * Initialize the embedSDK
      * 
-     * @param   embedsdk allows you to lister to events and control the scene content
+     * @param   embedsdk allows you to listen to events and control the scene content
      */
     constructor(embedSDK) {
         this.embedSDK = embedSDK;
+        this.data = {}; // Moved data initialization here for clarity
     }
 
     /**
-     * Enable AR element and set date on each label
-     * 
-     * @params  info about the weather in the location
+     * Fetch data from the API and set numberOfBottles.
      */
-    showAR(weather) {
-        const name = weather.weather[0].main;
-        this.embedSDK.enable(this.CARDS);
-        this.embedSDK.setLabelText(this.HUMIDITY_TEXT, weather.main.humidity + "%");
-        this.embedSDK.setLabelText(this.WIND_TEXT, weather.wind.speed + "km/h");
-        this.embedSDK.setLabelText(this.TEMPERATURE_TEXT, Math.floor(weather.main.temp_max) + "ºC / " + Math.floor(weather.main.temp_min) + "ºC");
-        this.embedSDK.setLabelText(this.MAIN_TEXT, name + " " + Math.floor(weather.main.temp) + "ºC");
-
-        const isFewClouds = weather.weather[0].description == 'few clouds';
-        const isSummerFall = this.isSummerFall(weather.coord.lat);
-        if (this.cold_states.includes(name)) {
-            this.setCold();
-        } else if (this.hot_states.includes(name)) {
-            this.setSunny(isSummerFall);
-        } else if (this.cloud_states.includes(name) || isFewClouds) {
-            this.setCloudy(isSummerFall, isFewClouds);
-        } else if (this.rain_states.includes(name)) {
-            this.setRain(isSummerFall, name);
+    async getWeather() {
+        const apiUrl = 'https://jsonplaceholder.typicode.com/todos/1';
+        try {
+            const response = await fetch(apiUrl);
+            if (!response.ok) throw new Error('Network response was not ok');
+            this.data = await response.json();
+            this.numberOfBottles = this.data.id;
+            this.maintextone = this.data.title;  // Set numberOfBottles directly from API response
+            this.maintexttwo = this.data.completed; 
+            this.updateLabels(); // Update labels after fetching data
+        } catch (error) {
+            console.error('Fetch error:', error);
         }
     }
 
-    /**
-     * Enable cold elements
-     * 
-     * @internal
-     */
-    setCold() {
-        this.embedSDK.enable(this.COLD);
-        this.embedSDK.playAnimation(this.COLD, this.cold_animation.name, true);
-        this.embedSDK.enable(this.SNOW);
+    init() {
+        this.getWeather(); // Fetch weather data on initialization
     }
 
     /**
-     * Enable sunny elements
-     * 
-     * @internal
-     * @param   is summer or fall
+     * Updates label text for all relevant UI elements.
      */
-    setSunny(isSummerFall) {
-        if (isSummerFall) {
-            this.embedSDK.enable(this.SF_SUNNY);
-            this.embedSDK.playAnimation(this.SF_SUNNY, this.sf_sunny_animation.name, true);
-        } else {
-            this.embedSDK.enable(this.WS_SUNNY);
-            this.embedSDK.playAnimation(this.WS_SUNNY, this.ws_sunny_animation.name, true);
-        }
-        this.embedSDK.enable(this.SUN);
-    }
-
-    /**
-     * Enable cloud elements
-     * 
-     * @internal
-     * @param   is summer or fall
-     * @param   few clouds
-     */
-    setCloudy(isSummerFall, isFewClouds) {
-        if (isSummerFall) {
-            this.embedSDK.enable(this.SF_CLOUDY);
-            this.embedSDK.playAnimation(this.SF_CLOUDY, this.sf_cloudy_animation.name, true);
-        } else {
-            this.embedSDK.enable(this.WS_CLOUDY);
-            this.embedSDK.playAnimation(this.WS_CLOUDY, this.ws_cloudy_animation.name, true);
-        }
-        if (isFewClouds) {
-            this.embedSDK.enable(this.SUN_CLOUDS);
-        } else {
-            this.embedSDK.enable(this.CLOUDS);
-        }
-    }
-
-    /**
-     * Enable rain elements
-     * 
-     * @internal
-     * @param   is summer or fall
-     * @param   name of the weather
-     */
-    setRain(isSummerFall, name) {
-        if (isSummerFall) {
-            this.embedSDK.enable(this.SF_RAIN);
-            this.embedSDK.playAnimation(this.SF_RAIN, this.sf_rain_animation.name, true);
-        } else {
-            this.embedSDK.enable(this.WS_RAIN);
-            this.embedSDK.playAnimation(this.WS_RAIN, this.ws_rain_animation.name, true);
-        }
-        if (this.rain.includes(name)) {
-            this.embedSDK.enable(this.RAIN_TOP);
-        } else {
-            this.embedSDK.enable(this.STORM);
-        }
-    }
-
-    /**
-     * Get season depending on hemisphere
-     * 
-     * @internal
-     * @return season
-     */
-    getSeason(lat) {
-        const isNorth = lat >= 0;
-        const getSeasonName = d => Math.floor((d.getMonth() / 12 * 4)) % 4;
-        if (isNorth) {
-            return ['Winter', 'Spring', 'Summer', 'Fall'][getSeasonName(new Date())]
-        } else {
-            return ['Summer', 'Fall', 'Winter', 'Spring'][getSeasonName(new Date())]
-        }
-    }
-
-    /**
-     * Determinates if the localion is on summer o fall
-     * 
-     * @internal
-     * @param   latitude
-     * @return boolean
-     */
-    isSummerFall(lat) {
-        const season = this.getSeason(lat);
-        return ['Summer', 'Fall'].includes(season);
-    }
-
-    /**
-     * Disable the AR elements
-     */
-    disableAll() {
-        this.embedSDK.disable(this.CARDS);
-        this.embedSDK.disable(this.WS_SUNNY);
-        this.embedSDK.disable(this.COLD);
-        this.embedSDK.disable(this.SF_RAIN);
-        this.embedSDK.disable(this.WS_CLOUDY);
-        this.embedSDK.disable(this.WS_RAIN);
-        this.embedSDK.disable(this.SF_SUNNY);
-        this.embedSDK.disable(this.SF_CLOUDY);
-        this.embedSDK.disable(this.SUN);
-        this.embedSDK.disable(this.SUN_CLOUDS);
-        this.embedSDK.disable(this.SNOW);
-        this.embedSDK.disable(this.STORM);
-        this.embedSDK.disable(this.RAIN_TOP);
-        this.embedSDK.disable(this.CLOUDS);
+    updateLabels() {
+        this.embedSDK.setLabelText(this.LABEL_BOTTLES, this.numberOfBottles.toString());
+        this.embedSDK.setLabelText(this.MAIN_TEXT, this.maintextone.toString());
+        this.embedSDK.setLabelText(this.MAIN_TEXT_2, this.maintexttwo.toString());
     }
 }
 
@@ -446,23 +63,14 @@ class OxExperience {
  * For more information visit https://docs.onirix.com/onirix-sdk/embed-sdk
  */
 import OnirixEmbedSDK from "https://unpkg.com/@onirix/embed-sdk@1.11.0/dist/ox-embed-sdk.esm.js";
+
 const embedSDK = new OnirixEmbedSDK();
 await embedSDK.connect();
 const oxExperience = new OxExperience(embedSDK);
-const oxExperienceUi = new OxExperienceUI();
 
-oxExperienceUi.onShowAR = (weather) => {
-    oxExperience.showAR(weather);
-}
-
-oxExperienceUi.onDisableAll = () => {
-    oxExperience.disableAll();
-}
-
+/**
+ * It's executed when the scene is totally loaded and it starts the game.
+ */
 embedSDK.subscribe(OnirixEmbedSDK.Events.SCENE_LOAD_END, (params) => {
-    oxExperienceUi.init();
-});
-
-embedSDK.subscribe(OnirixEmbedSDK.Events.SESSION_ENDED, (params) => {
-    oxExperienceUi.hideHTML();
+    oxExperience.init();
 });
